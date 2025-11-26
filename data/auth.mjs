@@ -1,6 +1,25 @@
 import MongoDB from "mongodb";
-import { getUsers } from "../db/database.mjs";
-const ObjectID = MongoDB.ObjectId;
+import { useVirtualId } from "../db/database.mjs";
+import { name } from "ejs";
+import mongoose from "mongoose";
+
+// versionKey: Mongoose가 문서를 저장할 때 자동으로 추가하는 _V라는 필드를 설정
+const userSchema = new mongoose.Schema(
+  {
+    userid: { type: String, require: true },
+    name: { type: String, require: true },
+    email: { type: String, require: true },
+    password: { type: String, require: true },
+    url: String,
+  },
+  { versionKey: false }
+);
+
+useVirtualId(userSchema);
+const User = mongoose.model("User", userSchema); //User=컬렉션 기능(이름을 정한 것/항상 단수로 적어야 함 why? 자동으로 복수로 바뀜)
+
+// import { getUsers } from "../db/database.mjs";
+// const ObjectID = MongoDB.ObjectId;
 
 // let users = [
 //   {
@@ -54,9 +73,7 @@ export async function getAllByUserid(userid) {
 }
 
 export async function createUser(user) {
-  return getUsers()
-    .insertOne(user)
-    .then((result) => result.insertedId.toString());
+  return new User(user).save().then((data) => data.id);
 }
 
 export async function login(userid, password) {
@@ -67,16 +84,9 @@ export async function login(userid, password) {
 }
 
 export async function findByUserid(userid) {
-  return getUsers().find({ userid }).next().then(mapOptionalUser);
+  return User.findOne({ userid });
 }
 
 export async function findById(id) {
-  return getUsers()
-    .find({ _id: new ObjectID(id) })
-    .next()
-    .then(mapOptionalUser);
-}
-
-function mapOptionalUser(user) {
-  return user ? { ...user, id: user._id.toString() } : user;
+  return User.findById(id);
 }
